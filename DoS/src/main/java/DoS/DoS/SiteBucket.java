@@ -1,7 +1,7 @@
 package DoS.DoS;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,8 +22,8 @@ public class SiteBucket implements Comparable<Object> {
 		
 		SiteBucket sb = site_map.get(site_name);
 		if (sb == null) {
-			this.running_jobs = new HashSet<Job>(); // might need to make this be a concurrent data structure
-			this.known_jobs = new HashSet<Job>(); // might need to make this be a concurrent data structure
+			this.running_jobs = Collections.newSetFromMap(new ConcurrentHashMap<Job, Boolean>());
+			this.known_jobs = Collections.newSetFromMap(new ConcurrentHashMap<Job, Boolean>());
 			this.pending_jobs = new PriorityBlockingQueue<Job>();
 			sb = site_map.putIfAbsent(site_name, this);
 		}
