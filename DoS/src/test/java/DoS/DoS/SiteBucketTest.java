@@ -101,10 +101,13 @@ public class SiteBucketTest {
 		SiteBucket sb = new SiteBucket(site_name);
 		
 		Job job1 = new Job(site_name, "foo", 1);
-		Job job2 = new Job(site_name, "foo", 2);
+		Job job2 = new Job(site_name, "foo", 2, true);
 		assertTrue("Add job", sb.add(job1));
 		assertEquals("Size of queue equals 1", 1, sb.pending_size());
-		assertFalse("Add job with same id", sb.add(job1));
+		assertFalse("Add same job", sb.add(job1));
+		assertEquals("Size of queue equals 1", 1, sb.pending_size());	
+		
+		assertFalse("Add job with same id", sb.add(job2));
 		assertEquals("Size of queue equals 1", 1, sb.pending_size());	
 	}
 	
