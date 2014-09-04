@@ -3,36 +3,36 @@ package DoS.DoS;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 
-public class SiteBucket {
+public class SiteBucket implements Comparable<Object> {
 	private static final Map<String,SiteBucket> site_map = new ConcurrentHashMap<String,SiteBucket>();
 	private final String site_name;
 	private Set<Job> running_jobs;
-	
-	/* I think we may need to turn pending_jobs into a TreeSet to handle the times where we need to initialize
-	 * the SiteBucket from scratch.  Alternatively, may need to create an addAll method
-	 */
-	private Queue<Job> pending_jobs;
+	private PriorityBlockingQueue<Job> pending_jobs;
+	private Set<Job> known_jobs;
 	
 	public SiteBucket(String site_name) {
+		if (site_name == null) {
+			throw new IllegalArgumentException("site name is not allowed to be null");
+		}
 		this.site_name = site_name;
 		
 		SiteBucket sb = site_map.get(site_name);
 		if (sb == null) {
-			this.running_jobs = new HashSet<Job>();
-			this.pending_jobs = new ConcurrentLinkedQueue<Job>();
+			this.running_jobs = new HashSet<Job>(); // might need to make this be a concurrent data structure
+			this.known_jobs = new HashSet<Job>(); // might need to make this be a concurrent data structure
+			this.pending_jobs = new PriorityBlockingQueue<Job>();
 			sb = site_map.putIfAbsent(site_name, this);
 		}
 
 		if (sb != null) {
 			this.running_jobs = sb.running_jobs;
 			this.pending_jobs = sb.pending_jobs;
+			this.known_jobs = sb.known_jobs;
 		}
-
 	}
 
 	public String get_site_name() {
@@ -47,11 +47,18 @@ public class SiteBucket {
 			throw new IllegalArgumentException("Site name (" + site_name + ") must match site name of job (" + job.get_site() + ")");
 		}
 		
+		if ( !known_jobs.add(job) ) {
+			return false;
+		}
+		
 		return job.get_is_running() ? running_jobs.add(job) : pending_jobs.add(job);
 	}
 	
 	public boolean remove(Job job) {
-		return job.get_is_running() ? running_jobs.remove(job) : pending_jobs.remove(job);
+		if (!known_jobs.remove(job)) {
+			return false;
+		}
+		return running_jobs.contains(job) ? running_jobs.remove(job) : pending_jobs.remove(job);
 	}
 	
 	public int running_size() {
@@ -60,6 +67,10 @@ public class SiteBucket {
 
 	public int pending_size() {
 		return pending_jobs.size();
+	}
+	
+	public Job first_pending_job() {
+		return pending_jobs.peek();
 	}
 	
 	public LocalDateTime earliest_pending_job() {
@@ -78,7 +89,42 @@ public class SiteBucket {
 		}
 		
 		job.set_is_running(true);
-		add(job);
-		return true;
+		return running_jobs.add(job);
+	}
+
+	@Override
+	public int compareTo(Object obj) {
+		if (obj == null) {
+			return -1;
+		}
+
+		SiteBucket other = (SiteBucket) obj;
+		if (get_site_name().equals(other.get_site_name())) {
+			return 0;
+		}
+		
+    	int comparison = running_size() - other.running_size();    	
+    	if ( comparison != 0 ) {
+    		return comparison;
+    	}
+    	
+    	Job first_job_1 = first_pending_job();
+    	Job first_job_2 = other.first_pending_job();
+    	
+     	if (first_job_1 != null || first_job_2 != null) {
+     		if (first_job_1 == null && first_job_2 != null) {
+     			return 1;
+     		}
+     		else if (first_job_1 != null && first_job_2 == null) {
+     			return -1;
+     		}
+   	
+     		comparison = first_job_1.compareTo(first_job_2);
+     		if ( comparison != 0 ) {
+     			return comparison;
+     		}
+     	}
+    	
+    	return get_site_name().compareTo(other.get_site_name());
 	}
 }
