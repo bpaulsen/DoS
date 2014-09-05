@@ -1,6 +1,5 @@
 package DoS.DoS;
 
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -61,6 +60,10 @@ public class SiteBucket implements Comparable<Object> {
 		return running_jobs.contains(job) ? running_jobs.remove(job) : pending_jobs.remove(job);
 	}
 	
+	public int size() {
+		return known_jobs.size();
+	}
+	
 	public int running_size() {
 		return running_jobs.size();
 	}
@@ -71,15 +74,6 @@ public class SiteBucket implements Comparable<Object> {
 	
 	public Job first_pending_job() {
 		return pending_jobs.peek();
-	}
-	
-	public LocalDateTime earliest_pending_job() {
-		Job job = pending_jobs.peek();
-		if ( job == null) {
-			return null;
-		}
-		
-		return job.get_create_timestamp();
 	}
 	
 	public boolean run_next_job() {

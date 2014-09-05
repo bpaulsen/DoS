@@ -25,14 +25,14 @@ public class SchedulerTest {
 		
 		Scheduler scheduler = new Scheduler();
 		assertTrue("Able to add job1 to scheduler", scheduler.add(job1));
-		assertEquals("Only one site has jobs", 1, scheduler.size());
+		assertEquals("Only one site has jobs", 1, scheduler.site_size());
 		assertTrue("Able to add job2 to scheduler", scheduler.add(job2));	
-		assertEquals("Only one site still has jobs", 1, scheduler.size());
+		assertEquals("Only one site still has jobs", 1, scheduler.site_size());
 		
 		assertTrue("Able to add job3 to scheduler", scheduler.add(job3));
-		assertEquals("Two sites have jobs", 2, scheduler.size());
+		assertEquals("Two sites have jobs", 2, scheduler.site_size());
 		assertTrue("Able to add job4 to scheduler", scheduler.add(job4));
-		assertEquals("Two sites still have jobs", 2, scheduler.size());
+		assertEquals("Two sites still have jobs", 2, scheduler.site_size());
 		
 		assertTrue("Schedule first job", scheduler.run_next_job());
 		assertTrue("Job 1 is now running", job1.get_is_running());
@@ -43,7 +43,7 @@ public class SchedulerTest {
 		assertTrue("Schedule third job",scheduler.run_next_job());
 		assertTrue("Job 4 is now running", job4.get_is_running());
 		assertTrue("Job 4 is completed", scheduler.remove(job4));
-		assertEquals("Only one site still has jobs", 1, scheduler.size());
+		assertEquals("Only one site still has jobs", 1, scheduler.site_size());
 	}
 
 	@Test

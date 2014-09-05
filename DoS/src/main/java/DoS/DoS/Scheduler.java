@@ -1,9 +1,35 @@
 package DoS.DoS;
 
+import java.util.Map;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Scheduler {
-	private static TreeSet<SiteBucket> site_buckets = new TreeSet<SiteBucket>();
+	private static final Map<Integer,TreeSet<SiteBucket>> tree_map = new ConcurrentHashMap<Integer,TreeSet<SiteBucket>>();
+	private static final TreeSet<SiteBucket> null_priority_treeset = new TreeSet<SiteBucket>();
+	
+	private int job_count = 0;
+	private TreeSet<SiteBucket> site_buckets;
+	
+	public Scheduler() {
+		site_buckets = null_priority_treeset;
+	}
+	
+	public Scheduler(int priority) {
+		if (priority < 0 || priority > 10) {
+			throw new IllegalArgumentException("priority must be between 0 and 10 inclusive");
+		}
+		
+		site_buckets = tree_map.get(priority);
+		if (site_buckets == null) {
+			site_buckets = new TreeSet<SiteBucket>();
+			TreeSet<SiteBucket> new_treeset = tree_map.putIfAbsent(priority, site_buckets);
+			if ( new_treeset != null ) {
+				site_buckets = new_treeset;
+			}
+		}
+	}
+	
 	private SiteBucket get_site_bucket(String site_name) {
 		SiteBucket site_bucket = new SiteBucket(site_name);
 		site_buckets.remove(site_bucket);
@@ -13,15 +39,17 @@ public class Scheduler {
 	// need to make this thread safe
 	public boolean add(Job job) {
 		SiteBucket site_bucket = get_site_bucket(job.get_site());
-		site_bucket.add(job);	
+		if (site_bucket.add(job)) {
+			job_count++;
+		}
 		return site_buckets.add(site_bucket);
 	}
 	
 	public boolean remove(Job job) {
 		SiteBucket site_bucket = get_site_bucket(job.get_site());
 		
-		if ( !site_bucket.remove(job) ) {
-			return false;
+		if ( site_bucket.remove(job) ) {
+			job_count--;
 		}
 		if ( site_bucket.pending_size() != 0 || site_bucket.running_size() != 0 ) {
 			return site_buckets.add(site_bucket);
@@ -47,7 +75,11 @@ public class Scheduler {
 		return site_buckets.add(site_bucket);
 	}
 	
-	public int size() {
+	public int site_size() {
 		return site_buckets.size();
+	}
+	
+	public int size() {
+		return job_count;
 	}
 }
