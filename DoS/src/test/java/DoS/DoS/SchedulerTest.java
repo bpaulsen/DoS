@@ -68,7 +68,7 @@ public class SchedulerTest {
 			}
 		}
 		end_time = System.nanoTime();
-		assertTrue("Run time " + (end_time - start_time) / 1000000 + " to schedule 1 million jobs is less than 12 seconds", (end_time - start_time) / 1000000 < 12000);
+		assertTrue("Run time " + (end_time - start_time) / 1000000 + " to schedule 1 million jobs is less than 14 seconds", (end_time - start_time) / 1000000 < 14000);
 		
 		start_time = end_time;		
 		for (int i=1; i<=1000; i++) {

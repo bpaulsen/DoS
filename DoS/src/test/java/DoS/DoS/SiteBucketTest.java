@@ -202,4 +202,23 @@ public class SiteBucketTest {
 		assertTrue("Able to add job2 to site_bucket 1", sb1.add(job2));
 		assertTrue("first site_bucket comes first in sort order because it has same number of running_jobs as first site_bucket, but a pending jobs at higher priority", sb1.compareTo(sb2) < 0);
 	}
+	
+	@Test
+	public void testEquals() {
+		String site_name = testName.getMethodName();
+		SiteBucket sb1 = new SiteBucket(site_name);
+		SiteBucket sb2 = new SiteBucket(site_name);
+		
+		assertEquals("two site buckets with same name .equals each other", sb1, sb2);
+	
+		Job job = new Job(site_name, "1", 1);
+		assertTrue("Add job to site bucket", sb1.add(job));
+		assertEquals("two site buckets with same name .equals each other after a job has been added to one", sb1, sb2);
+		
+		assertTrue("Run job", sb1.run_next_job());
+		assertEquals("two site buckets with same name .equals each other after a job has been run", sb1, sb2);
+
+		assertTrue("Remove job", sb1.remove(job));
+		assertEquals("two site buckets with same name .equals each other after a job has been removed", sb1, sb2);
+	}
 }

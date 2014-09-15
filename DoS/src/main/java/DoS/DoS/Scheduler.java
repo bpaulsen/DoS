@@ -1,5 +1,6 @@
 package DoS.DoS;
 
+import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -8,7 +9,7 @@ public class Scheduler {
 	private static final Map<Integer,TreeSet<SiteBucket>> tree_map = new ConcurrentHashMap<Integer,TreeSet<SiteBucket>>();
 	private static final TreeSet<SiteBucket> null_priority_treeset = new TreeSet<SiteBucket>();
 	
-	private int job_count = 0;
+	private int priority = -1;
 	private TreeSet<SiteBucket> site_buckets;
 	
 	public Scheduler() {
@@ -20,6 +21,7 @@ public class Scheduler {
 			throw new IllegalArgumentException("priority must be between 0 and 10 inclusive");
 		}
 		
+		this.priority = priority;
 		site_buckets = tree_map.get(priority);
 		if (site_buckets == null) {
 			site_buckets = new TreeSet<SiteBucket>();
@@ -39,22 +41,19 @@ public class Scheduler {
 	// need to make this thread safe
 	public boolean add(Job job) {
 		SiteBucket site_bucket = get_site_bucket(job.get_site());
-		if (site_bucket.add(job)) {
-			job_count++;
-		}
-		return site_buckets.add(site_bucket);
+		
+		boolean return_value = site_bucket.add(job);
+		return site_buckets.add(site_bucket) && return_value;
 	}
 	
 	public boolean remove(Job job) {
 		SiteBucket site_bucket = get_site_bucket(job.get_site());
 		
-		if ( site_bucket.remove(job) ) {
-			job_count--;
-		}
+		boolean return_value = site_bucket.remove(job);
 		if ( site_bucket.pending_size() != 0 || site_bucket.running_size() != 0 ) {
-			return site_buckets.add(site_bucket);
+			return site_buckets.add(site_bucket) && return_value;
 		}
-		return true;
+		return return_value;
 	}
 	
 	public boolean run_next_job() {
@@ -68,11 +67,8 @@ public class Scheduler {
 			return false;
 		}
 		
-		if ( !site_bucket.run_next_job() ) {
-			return false;
-		}
-		
-		return site_buckets.add(site_bucket);
+		boolean return_value = site_bucket.run_next_job();		
+		return site_buckets.add(site_bucket) && return_value;
 	}
 	
 	public int site_size() {
@@ -80,6 +76,41 @@ public class Scheduler {
 	}
 	
 	public int size() {
-		return job_count;
+	    int size = 0;
+	    Iterator<SiteBucket> iterator = site_buckets.iterator();
+
+	    while (iterator.hasNext()) {
+	    	size += iterator.next().size();
+	    }	
+
+		return size;
+	}
+	
+	public int running_size() {
+	    int size = 0;
+	    Iterator<SiteBucket> iterator = site_buckets.iterator();
+
+	    while (iterator.hasNext()) {
+	    	size += iterator.next().running_size();
+	    }	
+
+		return size;	
+	}
+	
+	public int get_priority() {
+		return priority;
+	}
+	
+	public Job first_pending_job() {
+		SiteBucket site_bucket = site_buckets.first();
+		if (site_bucket == null) {
+			return null;
+		}
+		return site_bucket.first_pending_job();
+	}
+	
+	public boolean get_is_running(Job job) {
+		SiteBucket site_bucket = new SiteBucket(job.get_site());
+		return site_bucket.get_is_running(job);
 	}
 }
