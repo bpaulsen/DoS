@@ -41,20 +41,20 @@ public class PriorityScheduler {
 			return s2.get_priority() - s1.get_priority(); 
 		}
 	};
-
-	private static final TreeSet<Scheduler> schedulers = new TreeSet<Scheduler>(comparator);
 	
 	public boolean add(Job job) {
 		int priority = job.get_priority();
 		Scheduler scheduler = get_scheduler(priority);
-		
-		boolean return_value = scheduler.add(job);
-		
+
+		if (!scheduler.add(job)) {
+			return false;
+		}
+
 		if (job.get_is_running()) {
 			running_count++;
 		}
 		
-		return schedulers.add(scheduler) && return_value;
+		return true;
 	}
 	
 	public boolean remove(Job job) {
@@ -68,7 +68,7 @@ public class PriorityScheduler {
 			running_count--;
 		}
 		
-		return schedulers.add(scheduler) && return_value;
+		return return_value;
 	}
 	
 	public Job poll() {
@@ -91,14 +91,10 @@ public class PriorityScheduler {
 	
 	public void clear() {
 		// cheap and easy because we have a small finite set of priorities
-		for (Integer priority : scheduler_map.keySet()) {
-			Scheduler scheduler = scheduler_map.get(priority);
-			if (scheduler != null) {
-				scheduler.clear();
-			}
+		for (Scheduler scheduler : scheduler_map.values()) {
+			scheduler.clear();
 		}
 
-		schedulers.clear();
 		running_count = 0;
 	}
 	
@@ -112,7 +108,6 @@ public class PriorityScheduler {
 			}
 		}
 		
-		schedulers.remove(scheduler);
 		return scheduler;
 	}
 }
