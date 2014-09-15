@@ -1,7 +1,6 @@
 package DoS.DoS;
 
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,11 +10,12 @@ public class PriorityScheduler {
 	private static final Map<Integer,Scheduler> scheduler_map = new ConcurrentHashMap<Integer, Scheduler>();
 	
 	private static int running_count = 0;
-	private static final TreeSet<Scheduler> schedulers = new TreeSet<Scheduler>(new Comparator<Scheduler>() {
+	
+	private static Comparator<Scheduler> comparator = new Comparator<Scheduler>() {
 		@Override
 		public int compare(Scheduler s1, Scheduler s2) {
-			Job job_s1 = s1.first_pending_job();
-			Job job_s2 = s2.first_pending_job();
+			Job job_s1 = s1.peek();
+			Job job_s2 = s2.peek();
 			
 			// handle the cases where one has pending and the other does not
 			if (job_s1 == null) return 1;
@@ -40,7 +40,9 @@ public class PriorityScheduler {
 			
 			return s2.get_priority() - s1.get_priority(); 
 		}
-	});
+	};
+
+	private static final TreeSet<Scheduler> schedulers = new TreeSet<Scheduler>(comparator);
 	
 	public boolean add(Job job) {
 		int priority = job.get_priority();
@@ -69,33 +71,21 @@ public class PriorityScheduler {
 		return schedulers.add(scheduler) && return_value;
 	}
 	
-	public Job run_next_job() {
+	public Job poll() {
+		TreeSet<Scheduler> schedulers = new TreeSet<Scheduler>(comparator);
+		
+		schedulers.addAll(scheduler_map.values());				
 		Scheduler scheduler = schedulers.first();
 		
 		if ( scheduler == null ) {
 			return null;
 		}
 		
-		if ( !schedulers.remove(scheduler) ) {
-			return null;
-		}
-		
-		Job job = scheduler.run_next_job();
+		Job job = scheduler.poll();
 		if (job != null) {
 			running_count++;
 		}
 		
-		schedulers.clear();
-		for (int priority=0; priority<=10; priority++) {
-			scheduler = scheduler_map.get(priority);
-			if (scheduler != null) {
-				schedulers.add(scheduler);
-			}
-		}
-		
-//		if (scheduler.pending_size() > 0) {
-//			schedulers.add(scheduler); // need to handle case where this fails
-//		}
 		return job;
 	}
 	

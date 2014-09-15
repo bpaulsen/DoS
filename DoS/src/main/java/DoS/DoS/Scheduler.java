@@ -9,7 +9,7 @@ public class Scheduler {
 	private static final Map<Integer,TreeSet<SiteBucket>> tree_map = new ConcurrentHashMap<Integer,TreeSet<SiteBucket>>();
 	private static final TreeSet<SiteBucket> null_priority_treeset = new TreeSet<SiteBucket>();
 	
-	private int priority = -1;
+	private Integer priority = null;
 	private TreeSet<SiteBucket> site_buckets;
 	
 	public Scheduler() {
@@ -33,7 +33,7 @@ public class Scheduler {
 	}
 	
 	private SiteBucket get_site_bucket(String site_name) {
-		SiteBucket site_bucket = priority >= 0 ? new SiteBucket(priority, site_name) : new SiteBucket(site_name);
+		SiteBucket site_bucket = priority == null ? new SiteBucket(site_name) : new SiteBucket(priority, site_name);
 		site_buckets.remove(site_bucket);
 		return site_bucket;
 	}
@@ -56,18 +56,14 @@ public class Scheduler {
 		return return_value;
 	}
 	
-	public Job run_next_job() {
-		SiteBucket site_bucket = site_buckets.first();
+	public Job poll() {
+		SiteBucket site_bucket = site_buckets.pollFirst();
 		
 		if ( site_bucket == null ) {
 			return null;
 		}
 		
-		if ( !site_buckets.remove(site_bucket) ) {
-			return null;
-		}
-		
-		Job job = site_bucket.run_next_job();		
+		Job job = site_bucket.poll();		
 		site_buckets.add(site_bucket); // need to handle case where we are unable to add the site_bucket back to the tree
 		return job;
 	}
@@ -120,19 +116,18 @@ public class Scheduler {
 		tree_map.clear();
 	}
 	
-	public int get_priority() {
+	public Integer get_priority() {
 		return priority;
 	}
 	
-	public Job first_pending_job() {
+	public Job peek() {
 		if (site_buckets.size() == 0) return null;
 		
-		SiteBucket site_bucket = site_buckets.first();
-		return site_bucket.first_pending_job();
+		return site_buckets.first().peek();
 	}
 	
 	public boolean get_is_running(Job job) {
-		SiteBucket site_bucket = priority >= 0 ? new SiteBucket(priority, job.get_site()) : new SiteBucket(job.get_site());
+		SiteBucket site_bucket = priority == null ? new SiteBucket(job.get_site()) : new SiteBucket(priority, job.get_site());
 		return site_bucket.get_is_running(job);
 	}
 }

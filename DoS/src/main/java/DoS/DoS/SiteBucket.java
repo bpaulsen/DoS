@@ -21,7 +21,6 @@ public class SiteBucket implements Comparable<Object> {
 		public int hashCode() {
 			final int prime = 31;
 			int result = 1;
-//			result = prime * result + getOuterType().hashCode();
 			result = prime * result
 					+ ((priority == null) ? 0 : priority.hashCode());
 			result = prime * result
@@ -38,8 +37,6 @@ public class SiteBucket implements Comparable<Object> {
 			if (getClass() != obj.getClass())
 				return false;
 			Key other = (Key) obj;
-//			if (!getOuterType().equals(other.getOuterType()))
-//				return false;
 			if (priority == null) {
 				if (other.priority != null)
 					return false;
@@ -51,11 +48,7 @@ public class SiteBucket implements Comparable<Object> {
 			} else if (!site_name.equals(other.site_name))
 				return false;
 			return true;
-		}
-
-		private SiteBucket getOuterType() {
-			return SiteBucket.this;
-		}		  
+		}	  
 	}
 		
 	private static final Map<Key,SiteBucket> site_map = new ConcurrentHashMap<Key,SiteBucket>();
@@ -70,29 +63,18 @@ public class SiteBucket implements Comparable<Object> {
 			throw new IllegalArgumentException("site name is not allowed to be null");
 		}
 		this.site_name = site_name;
-		
-		Key key = new Key(null, site_name);
-		SiteBucket sb = site_map.get(key);
-		if (sb == null) {
-			this.running_jobs = Collections.newSetFromMap(new ConcurrentHashMap<Job, Boolean>());
-			this.known_jobs = Collections.newSetFromMap(new ConcurrentHashMap<Job, Boolean>());
-			this.pending_jobs = new PriorityBlockingQueue<Job>();
-			sb = site_map.putIfAbsent(key, this);
-		}
-
-		if (sb != null) {
-			this.running_jobs = sb.running_jobs;
-			this.pending_jobs = sb.pending_jobs;
-			this.known_jobs = sb.known_jobs;
-		}
+		this.initialize_private_collections(null, site_name);
 	}
 	
-	public SiteBucket(Integer priority, String site_name) {
+	public SiteBucket(int priority, String site_name) {
 		if (site_name == null) {
 			throw new IllegalArgumentException("site name is not allowed to be null");
 		}
 		this.site_name = site_name;
-		
+		this.initialize_private_collections(priority, site_name);
+	}
+	
+	private void initialize_private_collections(Integer priority, String site_name) {
 		Key key = new Key(priority, site_name);
 		SiteBucket sb = site_map.get(key);
 		if (sb == null) {
@@ -106,7 +88,7 @@ public class SiteBucket implements Comparable<Object> {
 			this.running_jobs = sb.running_jobs;
 			this.pending_jobs = sb.pending_jobs;
 			this.known_jobs = sb.known_jobs;
-		}
+		}		
 	}
 
 	public String get_site_name() {
@@ -147,11 +129,11 @@ public class SiteBucket implements Comparable<Object> {
 		return pending_jobs.size();
 	}
 	
-	public Job first_pending_job() {
+	public Job peek() {
 		return pending_jobs.peek();
 	}
 	
-	public Job run_next_job() {
+	public Job poll() {
 		Job job = pending_jobs.poll();
 		if ( job != null ) {
 			if (running_jobs.add(job)) {
@@ -190,8 +172,8 @@ public class SiteBucket implements Comparable<Object> {
     		return comparison;
     	}
     	
-    	Job first_job_1 = first_pending_job();
-    	Job first_job_2 = other.first_pending_job();
+    	Job first_job_1 = peek();
+    	Job first_job_2 = other.peek();
     	
      	if (first_job_1 != null || first_job_2 != null) {
      		if (first_job_1 == null && first_job_2 != null) {

@@ -27,35 +27,35 @@ public class PrioritySchedulerTest {
 		Job job = new Job(site_name, "extra priority 9", 9);
 		assertTrue( "Able to add extra job of priority 9", ps.add(job));
 
-		Job runningJob = ps.run_next_job();
+		Job runningJob = ps.poll();
 		assertNotNull("Can run next job", runningJob);
 		assertEquals("Priority 9 job is now running", "9", runningJob.get_id());
 	
-		runningJob = ps.run_next_job();
+		runningJob = ps.poll();
 		assertNotNull("Can run next job", runningJob);
 		assertEquals("Priority 8 job is now running", "8", runningJob.get_id());	
 		
-		runningJob = ps.run_next_job();
+		runningJob = ps.poll();
 		assertNotNull("Can run next job", runningJob);
 		assertEquals("Priority 7 job is now running", "7", runningJob.get_id());	
 		
-		runningJob = ps.run_next_job();
+		runningJob = ps.poll();
 		assertNotNull("Can run next job", runningJob);
 		assertEquals("Priority 6 job is now running", "6", runningJob.get_id());
 		
-		runningJob = ps.run_next_job();
+		runningJob = ps.poll();
 		assertNotNull("Can run next job", runningJob);
 		assertEquals("Priority 5 job is now running", "5", runningJob.get_id());
 		
-		runningJob = ps.run_next_job();
+		runningJob = ps.poll();
 		assertNotNull("Can run next job", runningJob);
 		assertEquals("Priority 4 job is now running", "4", runningJob.get_id());
 		
-		runningJob = ps.run_next_job();
+		runningJob = ps.poll();
 		assertNotNull("Can run next job", runningJob);
 		assertEquals("Priority 3 job is now running", "3", runningJob.get_id());
 		
-		runningJob = ps.run_next_job();
+		runningJob = ps.poll();
 		assertNotNull("Can run next job", runningJob);
 		assertEquals("Priority 9 job is now running", "extra priority 9", runningJob.get_id());
 	}
