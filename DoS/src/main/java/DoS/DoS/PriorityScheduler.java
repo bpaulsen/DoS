@@ -1,6 +1,7 @@
 package DoS.DoS;
 
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -23,7 +24,7 @@ public class PriorityScheduler {
 			int running_size_s1 = s1.running_size();
 			int running_size_s2 = s2.running_size();
 			boolean within_allotment_s1 = running_count == 0 || (100.0 * running_size_s1 / running_count < percentages[s1.get_priority()] ) ? true : false;
-			boolean within_allotment_s2 = running_count == 0 || (100.0 * running_size_s2 / running_count < percentages[s1.get_priority()] ) ? true : false;
+			boolean within_allotment_s2 = running_count == 0 || (100.0 * running_size_s2 / running_count < percentages[s2.get_priority()] ) ? true : false;
 			
 			// handle cases where one or both sets of schedulers are running within their allotment
 			if (within_allotment_s1 && !within_allotment_s2) return -1;
@@ -44,14 +45,14 @@ public class PriorityScheduler {
 	public boolean add(Job job) {
 		int priority = job.get_priority();
 		Scheduler scheduler = get_scheduler(priority);
-		if ( !scheduler.add(job)) {
-			return false;
-		}
+		
+		boolean return_value = scheduler.add(job);
 		
 		if (job.get_is_running()) {
 			running_count++;
 		}
-		return true;
+		
+		return schedulers.add(scheduler) && return_value;
 	}
 	
 	public boolean remove(Job job) {
@@ -59,34 +60,56 @@ public class PriorityScheduler {
 		Scheduler scheduler = get_scheduler(priority);
 		
 		boolean is_running = scheduler.get_is_running(job) ? true : false;
-		if ( !scheduler.remove(job) ) {
-			return false;
-		}
+		boolean return_value = scheduler.remove(job);
 		
 		if ( is_running ) {
 			running_count--;
 		}
 		
-		return true;
+		return schedulers.add(scheduler) && return_value;
 	}
 	
-	public boolean run_next_job() {
+	public Job run_next_job() {
 		Scheduler scheduler = schedulers.first();
 		
 		if ( scheduler == null ) {
-			return false;
+			return null;
 		}
 		
 		if ( !schedulers.remove(scheduler) ) {
-			return false;
+			return null;
 		}
 		
-		boolean return_value = scheduler.run_next_job();
-		if (return_value) {
+		Job job = scheduler.run_next_job();
+		if (job != null) {
 			running_count++;
 		}
 		
-		return schedulers.add(scheduler) && return_value;
+		schedulers.clear();
+		for (int priority=0; priority<=10; priority++) {
+			scheduler = scheduler_map.get(priority);
+			if (scheduler != null) {
+				schedulers.add(scheduler);
+			}
+		}
+		
+//		if (scheduler.pending_size() > 0) {
+//			schedulers.add(scheduler); // need to handle case where this fails
+//		}
+		return job;
+	}
+	
+	public void clear() {
+		// cheap and easy because we have a small finite set of priorities
+		for (Integer priority : scheduler_map.keySet()) {
+			Scheduler scheduler = scheduler_map.get(priority);
+			if (scheduler != null) {
+				scheduler.clear();
+			}
+		}
+
+		schedulers.clear();
+		running_count = 0;
 	}
 	
 	private static Scheduler get_scheduler(int priority) {

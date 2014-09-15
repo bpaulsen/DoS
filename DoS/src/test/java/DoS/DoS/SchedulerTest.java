@@ -34,13 +34,13 @@ public class SchedulerTest {
 		assertTrue("Able to add job4 to scheduler", scheduler.add(job4));
 		assertEquals("Two sites still have jobs", 2, scheduler.site_size());
 		
-		assertTrue("Schedule first job", scheduler.run_next_job());
+		assertNotNull("Schedule first job", scheduler.run_next_job());
 		assertTrue("Job 1 is now running", job1.get_is_running());
-		assertTrue("Schedule second job", scheduler.run_next_job());
+		assertNotNull("Schedule second job", scheduler.run_next_job());
 		assertTrue("Job 3 is now running", job3.get_is_running());
 		
 		assertTrue("Job 3 is completed", scheduler.remove(job3));
-		assertTrue("Schedule third job",scheduler.run_next_job());
+		assertNotNull("Schedule third job",scheduler.run_next_job());
 		assertTrue("Job 4 is now running", job4.get_is_running());
 		assertTrue("Job 4 is completed", scheduler.remove(job4));
 		assertEquals("Only one site still has jobs", 1, scheduler.site_size());
@@ -64,7 +64,7 @@ public class SchedulerTest {
 		start_time = end_time;
 		for (int i=1; i<=1000; i++) {
 			for (int j=1; j<=1000; j++) {
-				assertTrue("Verify that job can be scheduled", scheduler.run_next_job());
+				assertNotNull("Verify that job can be scheduled", scheduler.run_next_job());
 			}
 		}
 		end_time = System.nanoTime();
@@ -80,6 +80,13 @@ public class SchedulerTest {
 		
 		end_time = System.nanoTime();
 		assertTrue("Run time " + (end_time - start_time) / 1000000 + " to remove 1 million jobs is less than 3 seconds", (end_time - start_time) / 1000000 < 3000);
+	}
+	
+	@Test
+	public void testNullOfFirstPendingJob() {
+		Scheduler scheduler = new Scheduler();
+		scheduler.clear();
+		assertEquals("Empty scheduler has no first_pending_job", null, scheduler.first_pending_job());
 	}
 }
 

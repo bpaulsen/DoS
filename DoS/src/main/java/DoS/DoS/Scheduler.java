@@ -33,7 +33,7 @@ public class Scheduler {
 	}
 	
 	private SiteBucket get_site_bucket(String site_name) {
-		SiteBucket site_bucket = new SiteBucket(site_name);
+		SiteBucket site_bucket = priority >= 0 ? new SiteBucket(priority, site_name) : new SiteBucket(site_name);
 		site_buckets.remove(site_bucket);
 		return site_bucket;
 	}
@@ -56,19 +56,20 @@ public class Scheduler {
 		return return_value;
 	}
 	
-	public boolean run_next_job() {
+	public Job run_next_job() {
 		SiteBucket site_bucket = site_buckets.first();
 		
 		if ( site_bucket == null ) {
-			return false;
+			return null;
 		}
 		
 		if ( !site_buckets.remove(site_bucket) ) {
-			return false;
+			return null;
 		}
 		
-		boolean return_value = site_bucket.run_next_job();		
-		return site_buckets.add(site_bucket) && return_value;
+		Job job = site_bucket.run_next_job();		
+		site_buckets.add(site_bucket); // need to handle case where we are unable to add the site_bucket back to the tree
+		return job;
 	}
 	
 	public int site_size() {
@@ -86,6 +87,17 @@ public class Scheduler {
 		return size;
 	}
 	
+	public int pending_size() {
+	    int size = 0;
+	    Iterator<SiteBucket> iterator = site_buckets.iterator();
+
+	    while (iterator.hasNext()) {
+	    	size += iterator.next().pending_size();
+	    }	
+
+		return size;
+	}
+	
 	public int running_size() {
 	    int size = 0;
 	    Iterator<SiteBucket> iterator = site_buckets.iterator();
@@ -97,20 +109,30 @@ public class Scheduler {
 		return size;	
 	}
 	
+	public void clear() {
+	    Iterator<SiteBucket> iterator = site_buckets.iterator();
+
+	    while (iterator.hasNext()) {
+	    	iterator.next().clear();
+	    }	
+
+		site_buckets.clear();
+		tree_map.clear();
+	}
+	
 	public int get_priority() {
 		return priority;
 	}
 	
 	public Job first_pending_job() {
+		if (site_buckets.size() == 0) return null;
+		
 		SiteBucket site_bucket = site_buckets.first();
-		if (site_bucket == null) {
-			return null;
-		}
 		return site_bucket.first_pending_job();
 	}
 	
 	public boolean get_is_running(Job job) {
-		SiteBucket site_bucket = new SiteBucket(job.get_site());
+		SiteBucket site_bucket = priority >= 0 ? new SiteBucket(priority, job.get_site()) : new SiteBucket(job.get_site());
 		return site_bucket.get_is_running(job);
 	}
 }

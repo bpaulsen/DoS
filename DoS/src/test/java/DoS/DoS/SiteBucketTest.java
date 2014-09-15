@@ -27,7 +27,7 @@ public class SiteBucketTest {
 		assertTrue("Verify that a job can be added to an non-empty queue", sb1.add(job2));		
 		assertEquals("Verify that pending counts are equal on job queues", sb1.pending_size(), sb2.pending_size());
 		
-		assertTrue("Verify that a non-empty pending queue can call run_next_job()", sb1.run_next_job());
+		assertNotNull("Verify that a non-empty pending queue can call run_next_job()", sb1.run_next_job());
 		assertEquals("Verify that pending counts are equal on job queues after running job", sb1.pending_size(), sb2.pending_size());
 		assertEquals("Verify that running counts are equal on job queues after running job", sb1.running_size(), sb2.running_size()); 
 		
@@ -56,7 +56,7 @@ public class SiteBucketTest {
 		assertEquals("Verify that pending count equals 2 after adding second job", sb.pending_size(), 2);
 		
 		assertEquals("Verify that running count equals 0", sb.running_size(), 0);
-		assertTrue("Verify that a non-empty pending queue can call run_next_job()", sb.run_next_job());
+		assertNotNull("Verify that a non-empty pending queue can call run_next_job()", sb.run_next_job());
 		assertEquals("Verify that running count equals 1", sb.running_size(), 1);
 		
 		assertTrue("Try to remove running job", sb.remove(job1));
@@ -142,7 +142,7 @@ public class SiteBucketTest {
 		// now verify that running the next job pulls them in priority order
 		for (int priority=10; priority>0; --priority) {
 			assertFalse("Job of priority " + priority + " is not currently running", jobs[priority].get_is_running());
-			assertTrue("Run next job", sb.run_next_job());
+			assertNotNull("Run next job", sb.run_next_job());
 			assertTrue("Job of priority " + priority + " is now currently running", jobs[priority].get_is_running());
 		}
 	}
@@ -163,7 +163,7 @@ public class SiteBucketTest {
 		// now verify that running the next job pulls them in timestamp order
 		for (int order=10; order>=0; --order) {
 			assertFalse("Job of order " + order + " is not currently running", jobs[order].get_is_running());
-			assertTrue("Run next job", sb.run_next_job());
+			assertNotNull("Run next job", sb.run_next_job());
 			assertTrue("Job of order " + order + " is now currently running", jobs[order].get_is_running());
 		}
 	}
@@ -192,7 +192,7 @@ public class SiteBucketTest {
 		assertTrue("second site_bucket comes first in sort order because it has same number of running_jobs as first site_bucket, pending jobs at same priority and earliest pending job", sb1.compareTo(sb2) > 0);	
 
 		assertTrue("Able to add job4 to site_bucket 2", sb2.add(job4));
-		assertTrue("Able to schedule for site_bucket 2", sb2.run_next_job());
+		assertNotNull("Able to schedule for site_bucket 2", sb2.run_next_job());
 		assertTrue("first site_bucket comes first in sort order because it has no running jobs and second site_bucket does", sb1.compareTo(sb2) < 0);
 
 		assertTrue("Verify that job4 is the running job", job4.get_is_running());
@@ -215,10 +215,38 @@ public class SiteBucketTest {
 		assertTrue("Add job to site bucket", sb1.add(job));
 		assertEquals("two site buckets with same name .equals each other after a job has been added to one", sb1, sb2);
 		
-		assertTrue("Run job", sb1.run_next_job());
+		assertNotNull("Run job", sb1.run_next_job());
 		assertEquals("two site buckets with same name .equals each other after a job has been run", sb1, sb2);
 
 		assertTrue("Remove job", sb1.remove(job));
 		assertEquals("two site buckets with same name .equals each other after a job has been removed", sb1, sb2);
+	}
+	
+	@Test
+	public void testClear() {
+		String site_name = testName.getMethodName();
+		SiteBucket sb = new SiteBucket(site_name);
+
+		Job job1 = new Job(site_name, "1", 1);
+		assertTrue("Add job to site bucket", sb.add(job1));
+		
+		Job job2 = new Job(site_name, "2", 1);
+		assertTrue("Add job to site bucket", sb.add(job2));
+		
+		assertEquals("Count of jobs in site", 2, sb.size());
+		
+		assertNotNull("Can run next job", sb.run_next_job());
+		
+		assertEquals("Count of jobs in site", 2, sb.size());
+		assertEquals("Count of running jobs in site", 1, sb.running_size());
+		assertEquals("Count of running jobs in site", 1, sb.pending_size());
+
+		sb.clear();
+		
+		assertEquals("Count of jobs in site", 0, sb.size());
+		assertEquals("Count of running jobs in site", 0, sb.running_size());
+		assertEquals("Count of pending jobs in site", 0, sb.pending_size());	
+	
+		assertNull("Can not schedule another job", sb.run_next_job());
 	}
 }
