@@ -58,6 +58,50 @@ public class PrioritySchedulerTest {
 		runningJob = ps.poll();
 		assertNotNull("Can run next job", runningJob);
 		assertEquals("Priority 9 job is now running", "extra priority 9", runningJob.get_id());
+
+		ps.clear();
+	}
+	
+	@Test
+	public void testPerformance() {
+		long start_time = System.nanoTime();
+		PriorityScheduler scheduler = new PriorityScheduler();
+		
+		for (int priority=1; priority<=9; priority++) {
+			for (int i=1; i<=100; i++) {
+				for (int j=1; j<=100; j++) {
+					Job job = new Job(String.valueOf(i), String.valueOf(j), priority);
+					assertTrue("Verify that job can be added", scheduler.add(job));
+				}
+			}
+		}
+		
+		long end_time = System.nanoTime();
+		assertTrue("Run time " + (end_time - start_time) / 1000000 + " to add 90000 jobs is less than 2 seconds", (end_time - start_time) / 1000000 < 2000);
+
+		start_time = end_time;
+		for (int priority=1; priority<=9; priority++) {
+			for (int i=1; i<=100; i++) {
+				for (int j=1; j<=100; j++) {
+					assertNotNull("Verify that job can be scheduled", scheduler.poll());
+				}
+			}
+		}
+		end_time = System.nanoTime();
+		assertTrue("Run time " + (end_time - start_time) / 1000000 + " to schedule 90000 jobs is less than 6 seconds", (end_time - start_time) / 1000000 < 6000);
+		
+		start_time = end_time;	
+		for (int priority=1; priority<=9; priority++) {
+			for (int i=1; i<=100; i++) {
+				for (int j=1; j<=100; j++) {
+					Job job = new Job(String.valueOf(i), String.valueOf(j), priority);
+					assertTrue("Verify that job (" + i + ", " + j + ") can be removed", scheduler.remove(job));
+				}
+			}
+		}
+		
+		end_time = System.nanoTime();
+		assertTrue("Run time " + (end_time - start_time) / 1000000 + " to remove 90000 jobs is less than 2 second", (end_time - start_time) / 1000000 < 2000);
 	}
 
 }
